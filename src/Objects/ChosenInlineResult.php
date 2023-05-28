@@ -5,6 +5,7 @@ namespace Telegram\Bot\Objects;
 /**
  * Class ChosenInlineResult.
  *
+ * @link https://core.telegram.org/bots/api#choseninlineresult
  *
  * @property string        $resultId           The unique identifier for the result that was chosen.
  * @property User          $from               The user that chose the result.
@@ -18,12 +19,19 @@ class ChosenInlineResult extends BaseObject
 {
     /**
      * {@inheritdoc}
+     *
+     * @return array{from: string, location: string}
      */
-    public function relations()
+    public function relations(): array
     {
         return [
             'from' => User::class,
             'location' => Location::class,
         ];
+    }
+
+    public function objectType(): ?string
+    {
+        return $this->findType(['location', 'inline_message_id']);
     }
 }

@@ -2,24 +2,23 @@
 
 namespace Telegram\Bot\Laravel;
 
+use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Foundation\Application as LaravelApplication;
+use Illuminate\Support\ServiceProvider;
+use Laravel\Lumen\Application as LumenApplication;
 use Telegram\Bot\Api;
 use Telegram\Bot\BotsManager;
-use Illuminate\Support\ServiceProvider;
 use Telegram\Bot\Laravel\Artisan\WebhookCommand;
-use Laravel\Lumen\Application as LumenApplication;
-use Illuminate\Foundation\Application as LaravelApplication;
 
 /**
  * Class TelegramServiceProvider.
  */
-class TelegramServiceProvider extends ServiceProvider
+final class TelegramServiceProvider extends ServiceProvider implements DeferrableProvider
 {
     /**
      * Register the service provider.
-     *
-     * @return void
      */
-    public function register()
+    public function register(): void
     {
         $this->configure();
         $this->offerPublishing();
@@ -30,7 +29,7 @@ class TelegramServiceProvider extends ServiceProvider
     /**
      * Setup the configuration.
      */
-    protected function configure()
+    private function configure(): void
     {
         $this->mergeConfigFrom(__DIR__.'/config/telegram.php', 'telegram');
     }
@@ -38,7 +37,7 @@ class TelegramServiceProvider extends ServiceProvider
     /**
      * Setup the resource publishing groups.
      */
-    protected function offerPublishing()
+    private function offerPublishing(): void
     {
         if ($this->app instanceof LaravelApplication && $this->app->runningInConsole()) {
             $this->publishes([
@@ -52,23 +51,19 @@ class TelegramServiceProvider extends ServiceProvider
     /**
      * Register bindings in the container.
      */
-    protected function registerBindings()
+    private function registerBindings(): void
     {
-        $this->app->singleton(BotsManager::class, static function ($app) {
-            return (new BotsManager(config('telegram')))->setContainer($app);
-        });
+        $this->app->singleton(BotsManager::class, static fn ($app): BotsManager => (new BotsManager(config('telegram')))->setContainer($app));
         $this->app->alias(BotsManager::class, 'telegram');
 
-        $this->app->bind(Api::class, static function ($app) {
-            return $app[BotsManager::class]->bot();
-        });
+        $this->app->bind(Api::class, static fn ($app) => $app[BotsManager::class]->bot());
         $this->app->alias(Api::class, 'telegram.bot');
     }
 
     /**
      * Register the Artisan commands.
      */
-    protected function registerCommands()
+    private function registerCommands(): void
     {
         if ($this->app->runningInConsole()) {
             $this->commands([

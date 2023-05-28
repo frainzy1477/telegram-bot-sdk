@@ -3,7 +3,10 @@
 namespace Telegram\Bot\Objects;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Enumerable;
 use Illuminate\Support\Str;
+use Illuminate\Support\Traits\EnumeratesValues;
+use InvalidArgumentException;
 
 /**
  * Class BaseObject.
@@ -15,7 +18,7 @@ abstract class BaseObject extends Collection
     /**
      * Builds collection entity.
      *
-     * @param array|mixed $data
+     * @param  array|mixed  $data
      */
     public function __construct($data)
     {
@@ -23,33 +26,35 @@ abstract class BaseObject extends Collection
     }
 
     /**
-     * Property relations.
-     *
-     * @return array
+     * Returns raw result.
      */
-    abstract public function relations();
+    public function getRawResult($data): mixed
+    {
+        return data_get($data, 'result', $data);
+    }
 
     /**
      * Magically access collection data.
      *
-     * @param $property
-     *
      * @return mixed
      */
-    public function __get($property)
+    public function __get($key)
     {
-        return $this->getPropertyValue($property);
+        return $this->getPropertyValue($key);
+    }
+
+    public function __set(string $name, mixed $value): void
+    {
+        throw new InvalidArgumentException(sprintf('Cannot set property “%s” on “%s” immutable object.', $name, static::class));
     }
 
     /**
      * Magically map to an object class (if exists) and return data.
      *
-     * @param      $property
-     * @param null $default
-     *
-     * @return mixed
+     * @param  string  $property Name of the property or relation.
+     * @param  mixed  $default Default value or \Closure that returns default value.
      */
-    protected function getPropertyValue($property, $default = null)
+    protected function getPropertyValue(string $property, mixed $default = null): mixed
     {
         $property = Str::snake($property);
         if (! $this->offsetExists($property)) {
@@ -78,46 +83,53 @@ abstract class BaseObject extends Collection
     }
 
     /**
-     * @param string $relationName
-     * @param array  $relationRawData
-     * @return array|\Illuminate\Support\Enumerable|\Illuminate\Support\Traits\EnumeratesValues|\Telegram\Bot\Objects\BaseObject
+     * Property relations.
      */
-    protected function getRelationValue(string $relationName, iterable $relationRawData)
+    abstract public function relations(): array;
+
+    /**
+     * @return array|Enumerable|EnumeratesValues|BaseObject
+     */
+    protected function getRelationValue(string $relativeName, iterable $relativeData): mixed
     {
-        /** @var class-string<\Telegram\Bot\Objects\BaseObject>|list<class-string<\Telegram\Bot\Objects\BaseObject>> $relation */
-        $relation = $this->relations()[$relationName];
+        /** @var class-string<BaseObject>|list<class-string<BaseObject>> $relative */
+        $relative = $this->relations()[$relativeName];
 
-        if (is_string($relation) && class_exists($relation)) {
-            return $relation::make($relationRawData);
-        }
-
-        $isOneToManyRelation = is_array($relation);
-        if ($isOneToManyRelation) {
-            /** @var class-string<\Telegram\Bot\Objects\BaseObject> $clasString */
-            $clasString = $relation[0];
-            $relatedObjects = Collection::make(); // @todo array type can be used in v4
-            foreach ($relationRawData as $singleObjectRawData) {
-                $relatedObjects[] = $clasString::make($singleObjectRawData);
+        if (is_string($relative)) {
+            if (! class_exists($relative)) {
+                throw new InvalidArgumentException(sprintf('Could not load “%s” relative: class “%s” not found.', $relativeName, $relative));
             }
-            return $relatedObjects;
+
+            return $relative::make($relativeData);
         }
 
-        throw new \InvalidArgumentException("Unknown type of the relationship data for the $relationName relation.");
+        /** @var class-string<BaseObject> $relativeClass */
+        $relativeClass = $relative[0];
+        $relatedObjects = Collection::make();
+        // @todo array type can be used in v4
+        foreach ($relativeData as $data) {
+            $relatedObjects->add($relativeClass::make($data));
+        }
+
+        return $relatedObjects;
+    }
+
+    public function __isset(string $name): bool
+    {
+        return $this->getPropertyValue($name) !== null;
     }
 
     /**
      * Get an item from the collection by key.
      *
-     * @param mixed $key
-     * @param mixed $default
-     *
-     * @return mixed|static
+     * @param  mixed  $key
+     * @param  mixed  $default
      */
-    public function get($key, $default = null)
+    public function get($key, $default = null): mixed
     {
         $value = parent::get($key, $default);
 
-        if (null !== $value && is_array($value)) {
+        if (is_array($value)) {
             return $this->getPropertyValue($key, $default);
         }
 
@@ -129,48 +141,62 @@ abstract class BaseObject extends Collection
      *
      * @return array|mixed
      */
-    public function getRawResponse()
+    public function getRawResponse(): mixed
     {
         return $this->items;
     }
 
     /**
-     * Returns raw result.
-     *
-     * @param $data
-     *
-     * @return mixed
-     */
-    public function getRawResult($data)
-    {
-        return data_get($data, 'result', $data);
-    }
-
-    /**
      * Get Status of request.
-     *
-     * @return mixed
      */
-    public function getStatus()
+    public function getStatus(): mixed
     {
         return data_get($this->items, 'ok', false);
     }
 
     /**
+     * Determine if the object is of given type.
+     */
+    public function isType(string $type): bool
+    {
+        if ($this->offsetExists($type)) {
+            return true;
+        }
+
+        return $this->objectType() === $type;
+    }
+
+    /**
+     * Detect type based on fields.
+     */
+    public function objectType(): ?string
+    {
+        return null;
+    }
+
+    /**
      * Magic method to get properties dynamically.
-     *
-     * @param $name
-     * @param $arguments
      *
      * @return mixed
      */
-    public function __call($name, $arguments)
+    public function __call($method, $parameters)
     {
-        if (! Str::startsWith($name, 'get')) {
+        if (! Str::startsWith($method, 'get')) {
             return false;
         }
-        $property = substr($name, 3);
+
+        $property = substr($method, 3);
 
         return $this->getPropertyValue($property);
+    }
+
+    /**
+     * Determine the type by given types.
+     */
+    protected function findType(array $types): ?string
+    {
+        return $this->keys()
+            ->intersect($types)
+            ->pop();
     }
 }

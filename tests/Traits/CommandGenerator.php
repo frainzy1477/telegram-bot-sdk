@@ -8,24 +8,35 @@ use Telegram\Bot\Commands\Command;
 trait CommandGenerator
 {
     /**
-     * @param       $numberRequired
-     * @param array $arguments
-     *
-     * @return Collection
+     * @param  int  $numberRequired
      */
-    private function commandGenerator($numberRequired, $arguments = [])
+    private function commandGenerator($numberRequired): Collection
     {
         $range = range(1, $numberRequired, 1);
 
         return collect($range)
-            ->map(function ($int) use ($arguments) {
-                $mockCommand = $this->prophesize(Command::class);
-                $mockCommand->getName()->willReturn("MockCommand$int");
-                $mockCommand->getAliases()->willReturn(["MockAlias$int"]);
-                $mockCommand->getPattern()->willReturn('');
-                $mockCommand->getArguments()->willReturn([]);
+            ->map(fn (int $instanceNumber): Command => new class($instanceNumber) extends Command
+            {
+                private int $instanceNumber;
 
-                return $mockCommand->reveal();
+                public function __construct(int $instanceNumber)
+                {
+                    $this->instanceNumber = $instanceNumber;
+                }
+
+                public function getName(): string
+                {
+                    return sprintf('MockCommand%s', $this->instanceNumber);
+                }
+
+                public function getAliases(): array
+                {
+                    return [sprintf('MockAlias%s', $this->instanceNumber)];
+                }
+
+                public function handle(): void
+                {
+                }
             });
     }
 }

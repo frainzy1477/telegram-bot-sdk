@@ -5,6 +5,8 @@ namespace Telegram\Bot\Objects;
 /**
  * Class CallbackQuery.
  *
+ * @link https://core.telegram.org/bots/api#callbackquery
+ *
  * @property int          $id                        Unique message identifier.
  * @property User         $from                      Sender.
  * @property Message|null $message                   (Optional). Message with the callback button that originated the query. Note that message content and message date will not be available if the message is too old.
@@ -17,12 +19,20 @@ class CallbackQuery extends BaseObject
 {
     /**
      * {@inheritdoc}
+     *
+     * @return array{from: string, message: string}
      */
-    public function relations()
+    public function relations(): array
     {
         return [
             'from' => User::class,
             'message' => Message::class,
         ];
+    }
+
+    public function objectType(): ?string
+    {
+        //TODO - Check if message and inline_message_id are exclusive to each other
+        return $this->findType(['data', 'game_short_name']);
     }
 }

@@ -5,6 +5,7 @@ namespace Telegram\Bot\Objects;
 /**
  * Class File.
  *
+ * @link https://core.telegram.org/bots/api#file
  *
  * @property string      $fileId         Unique identifier for this file.
  * @property string      $fileUniqueId   Unique identifier for this file, which is supposed to be the same over time and for different bots. Can't be used to download or reuse the file.
@@ -16,7 +17,7 @@ class File extends BaseObject
     /**
      * {@inheritdoc}
      */
-    public function relations()
+    public function relations(): array
     {
         return [];
     }

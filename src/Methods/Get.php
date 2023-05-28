@@ -10,6 +10,7 @@ use Telegram\Bot\Traits\Http;
 
 /**
  * Class Get.
+ *
  * @mixin Http
  */
 trait Get
@@ -21,8 +22,6 @@ trait Get
      * @link https://core.telegram.org/bots/api#getme
      *
      * @throws TelegramSDKException
-     *
-     * @return User
      */
     public function getMe(): User
     {
@@ -34,27 +33,18 @@ trait Get
     /**
      * Returns a list of profile pictures for a user.
      *
-     * <code>
-     * $params = [
-     *   'user_id' => '',
-     *   'offset'  => '',
-     *   'limit'   => '',
-     * ];
-     * </code>
      *
      * @link https://core.telegram.org/bots/api#getuserprofilephotos
      *
-     * @param array $params [
-     *
-     * @var int $user_id Required. Unique identifier of the target user
-     * @var int $offset  Optional. Sequential number of the first photo to be returned. By default, all photos are returned.
-     * @var int $limit   Optional. Limits the number of photos to be retrieved. Values between 1—100 are accepted. Defaults to 100.
-     *
+     * <code>
+     * $params = [
+     *       'user_id' => '',  // int - Required. Unique identifier of the target user
+     *       'offset'  => '',  // int - (Optional). Sequential number of the first photo to be returned. By default, all photos are returned.
+     *       'limit'   => '',  // int - (Optional). Limits the number of photos to be retrieved. Values between 1—100 are accepted. Defaults to 100.
      * ]
+     * </code>
      *
      * @throws TelegramSDKException
-     *
-     * @return UserProfilePhotos
      */
     public function getUserProfilePhotos(array $params): UserProfilePhotos
     {
@@ -66,11 +56,6 @@ trait Get
     /**
      * Returns basic info about a file and prepare it for downloading.
      *
-     * <code>
-     * $params = [
-     *   'file_id' => '',
-     * ];
-     * </code>
      *
      * The file can then be downloaded via the link
      * https://api.telegram.org/file/bot<token>/<file_path>,
@@ -78,15 +63,13 @@ trait Get
      *
      * @link https://core.telegram.org/bots/api#getFile
      *
-     * @param array $params [
-     *
-     * @var string $file_id Required. File identifier to get info about
-     *
+     * <code>
+     * $params = [
+     *       'file_id' => '',  // string - Required. File identifier to get info about
      * ]
+     * </code>
      *
      * @throws TelegramSDKException
-     *
-     * @return File
      */
     public function getFile(array $params): File
     {

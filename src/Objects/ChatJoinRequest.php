@@ -5,6 +5,7 @@ namespace Telegram\Bot\Objects;
 /**
  * Class ChatJoinRequest.
  *
+ * @link https://core.telegram.org/bots/api#chatjoinrequest
  *
  * @property Chat                   $chat           Chat to which the request was sent.
  * @property User                   $from           User that sent the join request.
@@ -16,8 +17,10 @@ class ChatJoinRequest extends BaseObject
 {
     /**
      * {@inheritdoc}
+     *
+     * @return array{chat: string, from: string, invite_link: string}
      */
-    public function relations()
+    public function relations(): array
     {
         return [
             'chat' => Chat::class,
